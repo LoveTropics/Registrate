@@ -36,14 +36,7 @@ import net.neoforged.neoforge.common.crafting.IngredientType;
  * <p>
  * <strong>This class should not be used for any purpose other than data generation</strong>, it will throw an exception if it is serialized to a packet buffer.
  */
-public final class DataIngredient implements ICustomIngredient {
-    public static final MapCodec<DataIngredient> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Ingredient.CODEC.fieldOf("parent").forGetter(val -> val.parent),
-            ResourceLocation.CODEC.fieldOf("id").forGetter(val -> val.id),
-            ItemPredicate.CODEC.listOf().fieldOf("criteria").forGetter(val -> List.of(val.predicates))
-    ).apply(instance, (parent, id, predicates) -> new DataIngredient(parent, id, predicates.toArray(ItemPredicate[]::new))));
-    public static final IngredientType<DataIngredient> TYPE = new IngredientType<>(CODEC);
-    
+public final class DataIngredient {
     private interface Excludes {
 
         void toNetwork(FriendlyByteBuf buffer);
@@ -64,27 +57,23 @@ public final class DataIngredient implements ICustomIngredient {
     @Getter
     private final ResourceLocation id;
     private final Function<RegistrateRecipeProvider, Criterion<InventoryChangeTrigger.TriggerInstance>> criteriaFactory;
-    private final ItemPredicate[] predicates;
-    
+
     private DataIngredient(Ingredient parent, ItemLike item) {
         this.parent = parent;
         this.id = BuiltInRegistries.ITEM.getKey(item.asItem());
         this.criteriaFactory = prov -> RegistrateRecipeProvider.has(item);
-        this.predicates = new ItemPredicate[] { ItemPredicate.Builder.item().of(item).build() };
     }
     
     private DataIngredient(Ingredient parent, TagKey<Item> tag) {
         this.parent = parent;
         this.id = tag.location();
         this.criteriaFactory = prov -> RegistrateRecipeProvider.has(tag);
-        this.predicates = new ItemPredicate[] { ItemPredicate.Builder.item().of(tag).build() };
     }
     
     private DataIngredient(Ingredient parent, ResourceLocation id, ItemPredicate... predicates) {
         this.parent = parent;
         this.id = id;
         this.criteriaFactory = prov -> RegistrateRecipeProvider.inventoryTrigger(predicates);
-        this.predicates = predicates;
     }
 
     public Criterion<InventoryChangeTrigger.TriggerInstance> getCriterion(RegistrateRecipeProvider prov) {
@@ -122,13 +111,7 @@ public final class DataIngredient implements ICustomIngredient {
         return new DataIngredient(parent, id, criteria);
     }
 
-    @Override
-    public Stream<ItemStack> getItems() {
-        return Arrays.stream(parent.getItems());
-    }
-
-    @Override
-    public IngredientType<?> getType() {
-        return TYPE;
+    public Ingredient toVanilla() {
+        return parent;
     }
 }
