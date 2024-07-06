@@ -1,7 +1,6 @@
 package com.tterrag.registrate.test.mod;
 
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -96,7 +95,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.common.crafting.IngredientType;
-import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.event.entity.SpawnPlacementRegisterEvent;
 import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 import net.neoforged.neoforge.fluids.FluidType;
@@ -390,65 +388,59 @@ public class TestMod {
                         ResourceLocation.withDefaultNamespace("textures/gui/advancements/backgrounds/stone.png"), AdvancementType.TASK, true, true, false)
                 .save(adv, registrate.getModid() + ":root");
         });
-        registrate.addDataGenerator(ProviderType.GENERIC_SERVER, provider -> provider.add(data -> {
-            // generic server side provider to generate custom dimension
-            // to teleport to this dimension use the following command
-            // /execute as @s in testmod:test_dimension run tp @s 0 64 0
-            // you can validate you are in this dimension by checking the debug screen
-            // right underneath the `Chunks[C]` and `Chunk[S]` should be the dimension name
-            var testDimensionTypeKey = ResourceKey.create(Registries.DIMENSION_TYPE, ResourceLocation.fromNamespaceAndPath("testmod", "test_dimension_type"));
 
-            return new DatapackBuiltinEntriesProvider(
-                    data.output(),
-                    data.registries(),
-                    new RegistrySetBuilder()
-                            // custom dimension type, just a simple overworld-like dimension
-                            .add(Registries.DIMENSION_TYPE, context -> context.register(
-                                    testDimensionTypeKey,
-                                    new DimensionType(
-                                            /* fixedTime */ OptionalLong.empty(),
-                                            /* hasSky */ true,
-                                            /* hasCeiling */ false,
-                                            /* ultraWarm */ false,
-                                            /* natural */ true,
-                                            /* coordinateScale */ 1D,
-                                            /* bedWords */ true,
-                                            /* respawnAnchorWorks */ false,
-                                            /* minY */ -64,
-                                            /* height */ 384,
-                                            /* localHeight */ 384,
-                                            /* infiniBurn */ BlockTags.INFINIBURN_OVERWORLD,
-                                            /* effectsLocation */ BuiltinDimensionTypes.OVERWORLD_EFFECTS,
-                                            /* ambientLight */ 0F,
-                                            new DimensionType.MonsterSettings(
-                                                    /* piglinSafe */ false,
-                                                    /* hasRaids */ true,
-                                                    /* monsterSpawnLightTest */ UniformInt.of(0, 7),
-                                                    /* monsterSpawnBlockLightLimit */ 0
-                                            )
+        // provider to generate custom dimension from data pack registry set
+        // to teleport to this dimension use the following command
+        // /execute as @s in testmod:test_dimension run tp @s 0 64 0
+        // you can validate you are in this dimension by checking the debug screen
+        // right underneath the `Chunks[C]` and `Chunk[S]` should be the dimension name
+        var testDimensionTypeKey = ResourceKey.create(Registries.DIMENSION_TYPE, ResourceLocation.fromNamespaceAndPath("testmod", "test_dimension_type"));
+
+        registrate.setDataRegistries(  new RegistrySetBuilder()
+                // custom dimension type, just a simple overworld-like dimension
+                .add(Registries.DIMENSION_TYPE, context -> context.register(
+                        testDimensionTypeKey,
+                        new DimensionType(
+                                /* fixedTime */ OptionalLong.empty(),
+                                /* hasSky */ true,
+                                /* hasCeiling */ false,
+                                /* ultraWarm */ false,
+                                /* natural */ true,
+                                /* coordinateScale */ 1D,
+                                /* bedWords */ true,
+                                /* respawnAnchorWorks */ false,
+                                /* minY */ -64,
+                                /* height */ 384,
+                                /* localHeight */ 384,
+                                /* infiniBurn */ BlockTags.INFINIBURN_OVERWORLD,
+                                /* effectsLocation */ BuiltinDimensionTypes.OVERWORLD_EFFECTS,
+                                /* ambientLight */ 0F,
+                                new DimensionType.MonsterSettings(
+                                        /* piglinSafe */ false,
+                                        /* hasRaids */ true,
+                                        /* monsterSpawnLightTest */ UniformInt.of(0, 7),
+                                        /* monsterSpawnBlockLightLimit */ 0
+                                )
+                        )
+                ))
+                // register custom dimension for the dimension type
+                // simple single biome (plains) dimension
+                .add(Registries.LEVEL_STEM, context -> {
+                    var plains = context.lookup(Registries.BIOME).getOrThrow(Biomes.PLAINS);
+                    var testDimensionType = context.lookup(Registries.DIMENSION_TYPE).getOrThrow(testDimensionTypeKey);
+                    var overworldNoiseSettings = context.lookup(Registries.NOISE_SETTINGS).getOrThrow(NoiseGeneratorSettings.OVERWORLD);
+
+                    context.register(
+                            ResourceKey.create(Registries.LEVEL_STEM, ResourceLocation.fromNamespaceAndPath("testmod", "test_dimension")),
+                            new LevelStem(
+                                    testDimensionType,
+                                    new NoiseBasedChunkGenerator(
+                                            new FixedBiomeSource(plains),
+                                            overworldNoiseSettings
                                     )
-                            ))
-                            // register custom dimension for the dimension type
-                            // simple single biome (plains) dimension
-                            .add(Registries.LEVEL_STEM, context -> {
-                                var plains = context.lookup(Registries.BIOME).getOrThrow(Biomes.PLAINS);
-                                var testDimensionType = context.lookup(Registries.DIMENSION_TYPE).getOrThrow(testDimensionTypeKey);
-                                var overworldNoiseSettings = context.lookup(Registries.NOISE_SETTINGS).getOrThrow(NoiseGeneratorSettings.OVERWORLD);
-
-                                context.register(
-                                        ResourceKey.create(Registries.LEVEL_STEM, ResourceLocation.fromNamespaceAndPath("testmod", "test_dimension")),
-                                        new LevelStem(
-                                                testDimensionType,
-                                                new NoiseBasedChunkGenerator(
-                                                        new FixedBiomeSource(plains),
-                                                        overworldNoiseSettings
-                                                )
-                                        )
-                                );
-                            }),
-                    Set.of("testmod")
-            );
-        }));
+                            )
+                    );
+                }));
 
         eventBus.addListener(this::onCommonSetup);
     }

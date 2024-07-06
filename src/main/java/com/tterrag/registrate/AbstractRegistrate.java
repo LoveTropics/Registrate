@@ -26,6 +26,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -48,6 +49,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.neoforge.data.loading.DatagenModLoader;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -192,6 +194,8 @@ public abstract class AbstractRegistrate<S extends AbstractRegistrate<S>> {
     @Nullable
     private String currentName;
     private boolean skipErrors;
+    @Nullable
+    private RegistrySetBuilder dataRegistries;
 
     /**
      * Construct a new Registrate for the given mod ID.
@@ -324,7 +328,7 @@ public abstract class AbstractRegistrate<S extends AbstractRegistrate<S>> {
      *            The event
      */
     protected void onData(GatherDataEvent event) {
-        event.getGenerator().addProvider(true, provider = new RegistrateDataProvider(this, modid, event));
+        event.getGenerator().addProvider(true, provider = new RegistrateDataProvider(this, modid, event, dataRegistries));
     }
 
     /**
@@ -942,6 +946,17 @@ public abstract class AbstractRegistrate<S extends AbstractRegistrate<S>> {
         final ResourceKey<Registry<R>> registryId = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(getModid(), name));
         OneTimeEventReceiver.addModListener(this, DataPackRegistryEvent.NewRegistry.class, event -> event.dataPackRegistry(registryId, codec, networkCodec));
         return registryId;
+    }
+
+    public S setDataRegistries(RegistrySetBuilder builder) {
+        if (dataRegistries != null) {
+            throw new IllegalStateException("Can only add a single set of data pack registries");
+        }
+        addDataGenerator(ProviderType.GENERIC_SERVER, prov -> prov.add(data ->
+                new DatapackBuiltinEntriesProvider(data.output(), data.registries(), builder, Set.of(modid))
+        ));
+        dataRegistries = builder;
+        return self();
     }
 
     /* === Builder helpers === */

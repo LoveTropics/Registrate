@@ -9,8 +9,10 @@ import com.tterrag.registrate.util.nullness.NonnullType;
 import lombok.extern.log4j.Log4j2;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
+import net.minecraft.data.registries.RegistryPatchGenerator;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
@@ -33,9 +35,16 @@ public class RegistrateDataProvider implements DataProvider {
     private final Map<ProviderType<?>, RegistrateProvider> subProviders = new LinkedHashMap<>();
     private final CompletableFuture<HolderLookup.Provider> registriesLookup;
 
-    public RegistrateDataProvider(AbstractRegistrate<?> parent, String modid, GatherDataEvent event) {
+    public RegistrateDataProvider(AbstractRegistrate<?> parent, String modid, GatherDataEvent event, @Nullable RegistrySetBuilder dataRegistries) {
         this.mod = modid;
-        this.registriesLookup = event.getLookupProvider();
+
+        CompletableFuture<HolderLookup.Provider> registriesLookup = event.getLookupProvider();
+        // Patch our registry lookup with any datapack registries added by the mod
+        if (dataRegistries != null) {
+            registriesLookup = RegistryPatchGenerator.createLookup(registriesLookup, dataRegistries)
+                    .thenApply(RegistrySetBuilder.PatchedRegistries::full);
+        }
+        this.registriesLookup = registriesLookup;
 
         EnumSet<LogicalSide> sides = EnumSet.noneOf(LogicalSide.class);
         if (event.includeServer()) {
@@ -51,7 +60,7 @@ public class RegistrateDataProvider implements DataProvider {
             ProviderType<?> type = TYPES.get(id);
             RegistrateProvider prov = type.create(parent, new ProviderContext(
                     event.getGenerator().getPackOutput(),
-                    event.getLookupProvider(),
+                    registriesLookup,
                     event.getExistingFileHelper(),
                     known
             ));
