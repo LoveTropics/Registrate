@@ -2,6 +2,7 @@ package com.tterrag.registrate.util;
 
 import org.jetbrains.annotations.ApiStatus;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
@@ -13,18 +14,24 @@ import java.util.function.Supplier;
 
 public final class CreativeModeTabModifier implements CreativeModeTab.Output {
     private final Supplier<FeatureFlagSet> flags;
+    private final Supplier<HolderLookup.Provider> registries;
     private final BooleanSupplier hasPermissions;
     private final BiConsumer<ItemStack, CreativeModeTab.TabVisibility> acceptFunc;
 
     @ApiStatus.Internal
-    public CreativeModeTabModifier(Supplier<FeatureFlagSet> flags, BooleanSupplier hasPermissions, BiConsumer<ItemStack, CreativeModeTab.TabVisibility> acceptFunc) {
+    public CreativeModeTabModifier(Supplier<FeatureFlagSet> flags, Supplier<HolderLookup.Provider> registries, BooleanSupplier hasPermissions, BiConsumer<ItemStack, CreativeModeTab.TabVisibility> acceptFunc) {
         this.flags = flags;
+        this.registries = registries;
         this.hasPermissions = hasPermissions;
         this.acceptFunc = acceptFunc;
     }
 
     public FeatureFlagSet getFlags() {
         return flags.get();
+    }
+
+    public HolderLookup.Provider getRegistries() {
+        return registries.get();
     }
 
     public boolean hasPermissions() {
