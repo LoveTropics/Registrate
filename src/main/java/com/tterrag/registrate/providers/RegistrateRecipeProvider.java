@@ -47,10 +47,12 @@ import net.neoforged.neoforge.common.conditions.ICondition;
 public class RegistrateRecipeProvider extends RecipeProvider implements RegistrateProvider, RecipeOutput {
 
     private final AbstractRegistrate<?> owner;
+    private final CompletableFuture<HolderLookup.Provider> registries;
 
-    public RegistrateRecipeProvider(AbstractRegistrate<?> owner, PackOutput output, CompletableFuture<HolderLookup.Provider> provider) {
-        super(output, provider);
+    public RegistrateRecipeProvider(AbstractRegistrate<?> owner, PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
+        super(output, registries);
         this.owner = owner;
+        this.registries = registries;
     }
 
     @Override
@@ -82,6 +84,11 @@ public class RegistrateRecipeProvider extends RecipeProvider implements Registra
         this.callback = recipeOutput;
         owner.genData(ProviderType.RECIPE, this);
         this.callback = null;
+    }
+
+    public HolderLookup.Provider getRegistries() {
+        // Won't block, as we only call genData once it's ready
+        return registries.join();
     }
 
     public ResourceLocation safeId(ResourceLocation id) {
