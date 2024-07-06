@@ -7,7 +7,6 @@ import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.apache.commons.compress.utils.Lists;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -26,15 +25,15 @@ public final class RegistrateGenericProvider implements RegistrateProvider
     private final List<Generator> generators = Lists.newArrayList();
 
     @ApiStatus.Internal
-    RegistrateGenericProvider(AbstractRegistrate<?> registrate, GatherDataEvent event, LogicalSide side, ProviderType<RegistrateGenericProvider> providerType)
+    RegistrateGenericProvider(AbstractRegistrate<?> registrate, ProviderContext context, LogicalSide side, ProviderType<RegistrateGenericProvider> providerType)
     {
         this.registrate = registrate;
         this.side = side;
         this.providerType = providerType;
 
-        output = event.getGenerator().getPackOutput();
-        registries = event.getLookupProvider();
-        existingFileHelper = event.getExistingFileHelper();
+        output = context.output();
+        registries = context.registries();
+        existingFileHelper = context.existingFileHelper();
     }
 
     public RegistrateGenericProvider add(Generator generator)

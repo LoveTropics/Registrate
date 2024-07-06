@@ -49,7 +49,12 @@ public class RegistrateDataProvider implements DataProvider {
         Map<ProviderType<?>, RegistrateProvider> known = new HashMap<>();
         for (String id : TYPES.keySet()) {
             ProviderType<?> type = TYPES.get(id);
-            RegistrateProvider prov = type.create(parent, event, known);
+            RegistrateProvider prov = type.create(parent, new ProviderContext(
+                    event.getGenerator().getPackOutput(),
+                    event.getLookupProvider(),
+                    event.getExistingFileHelper(),
+                    known
+            ));
             known.put(type, prov);
             if (sides.contains(prov.getSide())) {
                 log.debug(DebugMarkers.DATA, "Adding provider for type: {}", id);
