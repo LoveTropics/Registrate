@@ -2,38 +2,20 @@ plugins {
     id "io.freefair.lombok" version "8.13"
     id 'com.matthewprenger.cursegradle' version '1.4.0'
     id 'org.ajoberstar.grgit' version '5.2.2'
-//    id "com.palantir.revapi" version "1.7.0"
     id 'net.neoforged.gradle.userdev' version '7.0.190'
 }
 
 apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
 
-boolean dev = System.getenv('RELEASE') == null || System.getenv('RELEASE').equals('false')
-def getVersion = {
-    def raw = grgit.describe(commit: 'HEAD', longDescr: true, tags: true)
-    def desc = (raw == null ? '0.0-0-unknown' : grgit.describe(commit: 'HEAD', longDescr: true, tags: true)).split('-') as List
-    System.out.println(desc)
-    def hash = desc.remove(desc.size() - 1).substring(1)
-    def offset = desc.remove(desc.size() - 1)
-    return project.mod_version.replace('x', offset) + (System.getenv("GITHUB_RUN_NUMBER") == null ? "+${hash}" : "+${System.getenv("GITHUB_RUN_NUMBER")}")
-}
+def env = System.getenv()
+def buildId = env.GITHUB_RUN_NUMBER ?: grgit.head().abbreviatedId
 
-System.out.println(JavaVersion.current())
-
-version = "MC${minecraft_version}-${getVersion()}"
+version = "MC${minecraft_version}-${project.mod_version}+$buildId"
 group = "com.tterrag.registrate"
-archivesBaseName = "Registrate"
+base.archivesName = "Registrate-LT"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-/*
-revapi {
-    oldGroup = project.group
-    oldName = project.archivesBaseName
-    oldVersion = 'MC1.18.2-1.0.25'
-    tasks.revapiAnalyze.dependsOn reobf
-}
-*/
 
 runs {
     configureEach {
@@ -50,13 +32,13 @@ runs {
 
     server {
         workingDirectory project.file('run/server')
-        programArguments '--nogui'
+        arguments '--nogui'
     }
 
     clientData {
         workingDirectory project.file('run')
 
-        programArguments.addAll '--mod', 'testmod', '--all', '--output', rootProject.file('src/generated/resources/').getAbsolutePath(), '--existing', rootProject.file('src/test/resources').getAbsolutePath()
+        arguments '--mod', 'testmod', '--all', '--output', rootProject.file('src/generated/resources/').getAbsolutePath(), '--existing', rootProject.file('src/test/resources').getAbsolutePath()
     }
 }
 
@@ -65,10 +47,7 @@ sourceSets.main.resources {
 }
 
 repositories {
-    maven {
-        name = 'tterrag'
-        url = 'https://maven.tterrag.com/'
-    }
+    mavenCentral()
 }
 
 dependencies {
@@ -100,7 +79,8 @@ jar {
     }
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
+tasks.register('sourceJar', Jar) {
+    dependsOn classes
     archiveClassifier = 'sources'
     from sourceSets.main.delombokTask
     exclude 'com.tterrag.registrate.test.*'
@@ -119,6 +99,7 @@ javadoc {
 publishing {
     tasks.publish.dependsOn 'build'
     tasks.publishToMavenLocal.dependsOn 'build'
+
     publications {
         mavenJava(MavenPublication) {
             artifact jar
@@ -127,57 +108,16 @@ publishing {
     }
 
     repositories {
-        if (project.hasProperty('mavendir')) {
-            maven { url mavendir }
-        }
-
-        def mavenToken = System.getenv("MAVEN_TOKEN")
-        if (mavenToken != null && !mavenToken.isEmpty()) {
+        if (env.MAVEN_URL) {
             maven {
-                url = "https://mvn.devos.one/snapshots"
                 credentials {
-                    username = "ithundxr-github"
-                    password = mavenToken
+                    username env.MAVEN_USERNAME
+                    password env.MAVEN_PASSWORD
                 }
+                url env.MAVEN_URL
             }
-        }
-    }
-}
-
-repositories {
-    maven {
-        url 'https://repo.maven.apache.org/maven2'
-        name 'Maven Central'
-    }
-}
-
-String getChangelogText() {
-    def changelogFile = file('changelog.txt')
-    String str = ''
-    int lineCount = 0
-    boolean done = false
-    changelogFile.eachLine {
-        if (done || it == null) {
-            return
-        }
-        if (it.size() > 1) {
-            def temp = it
-            if (lineCount == 0) {
-                temp = "Chisel ${version}"
-                temp = "<h2>$temp</h2>"
-            } else if (it.startsWith('-')) {
-                temp = "&nbsp;&nbsp;&nbsp;$temp"
-                temp = temp.replaceAll("(\\S+\\/\\S+)#([0-9]+)\\b", "<a href=\"https://github.com/\$1/issues/\$2\">\$0</a>")
-                temp = temp.replaceAll("#([0-9]+)\\b(?!<\\/a>)", "<a href=\"https://github.com/$github_project/issues/\$1\">\$0</a>")
-            } else {
-                temp = "<h4>$temp</h4>"
-            }
-            str += "$temp<br/>"
-            lineCount++
-            return
         } else {
-            done = true
+            mavenLocal()
         }
     }
-    return str
 }
