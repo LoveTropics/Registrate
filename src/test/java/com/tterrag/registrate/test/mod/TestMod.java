@@ -260,7 +260,7 @@ public class TestMod {
             .fluid(
                     ResourceLocation.withDefaultNamespace("block/water_flow"),
                     ResourceLocation.withDefaultNamespace("block/lava_still"),
-					FluidType::new)
+                FluidType::new)
             .properties(p -> p.lightLevel(15).canConvertToSource(true))
             .renderType(() -> () -> ChunkSectionLayer.TRANSLUCENT)
             .noBucket()
@@ -272,7 +272,7 @@ public class TestMod {
     private final MenuEntry<ChestMenu> testmenu = registrate.object("testmenu")
             .menu((type, windowId, inv) -> new ChestMenu(type, windowId, inv, new SimpleContainer(9 * 9), 9), () -> ContainerScreen::new)
             .register();
-    
+
 //    private final RegistryEntry<TestBiome> testbiome = registrate.object("testbiome")
 //            .biome(TestBiome::new)
 //            .properties(b -> b.category(Category.PLAINS)
@@ -337,6 +337,8 @@ public class TestMod {
     public TestMod(IEventBus eventBus) {
 
         registrate.addRawLang("testmod.custom.lang", "Test");
+        registrate.addRawLang("testmod.custom.lang.with_placeholders1", "Placeholder 1 %s Placeholder 2 %s");
+        registrate.addRawLang("testmod.custom.lang.with_placeholders2", "Placeholder 1 %s Placeholder 2 %2$s Placeholder 3 %s");
         registrate.addLang("tooltip", testblock.getId(), "Egg.");
         registrate.addLang("item", testitem.getId(), "testextra", "Magic!");
         registrate.addDataGenerator(ProviderType.ADVANCEMENT, adv -> {
