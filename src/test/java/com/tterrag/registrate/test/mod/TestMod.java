@@ -301,7 +301,7 @@ public class TestMod {
     private final MenuEntry<ChestMenu> testmenu = registrate.object("testmenu")
             .menu((type, windowId, inv) -> new ChestMenu(type, windowId, inv, new SimpleContainer(9 * 9), 9), () -> ContainerScreen::new)
             .register();
-    
+
 //    private final RegistryEntry<TestBiome> testbiome = registrate.object("testbiome")
 //            .biome(TestBiome::new)
 //            .properties(b -> b.category(Category.PLAINS)
@@ -366,6 +366,10 @@ public class TestMod {
     public TestMod(IEventBus eventBus) {
 
         registrate.addRawLang("testmod.custom.lang", "Test");
+        registrate.addRawLang("testmod.custom.lang.with_placeholders1", "Placeholder 1 %s Placeholder 2 %s");
+        registrate.addRawLang("testmod.custom.lang.with_placeholders2", "Placeholder 1 %s Placeholder 2 %2$s Placeholder 3 %s");
+        registrate.addRawLang("testmod.custom.lang.brackets", "(Bracket 1) [Bracket 2] {Bracket 3} <Bracket 4> ◁Bracket 5▷");
+        registrate.addRawLang("testmod.custom.lang.slashes", "/commmands look good and here is a backslash \\");
         registrate.addLang("tooltip", testblock.getId(), "Egg.");
         registrate.addLang("item", testitem.getId(), "testextra", "Magic!");
         registrate.addDataGenerator(ProviderType.ADVANCEMENT, adv -> {
