@@ -2,7 +2,7 @@ plugins {
     id "io.freefair.lombok" version "8.13"
     id 'com.matthewprenger.cursegradle' version '1.4.0'
     id 'org.ajoberstar.grgit' version '5.2.2'
-    id 'net.neoforged.gradle.userdev' version '7.0.190'
+    id 'net.neoforged.gradle.userdev' version '7.1.25'
 }
 
 apply plugin: 'maven-publish'
@@ -11,11 +11,11 @@ apply plugin: 'eclipse'
 def env = System.getenv()
 def buildId = env.GITHUB_RUN_NUMBER ?: grgit.head().abbreviatedId
 
-version = "MC${minecraft_version}-${project.mod_version}+$buildId"
+version = "MC${release_minecraft_version}-${project.mod_version}+$buildId"
 group = "com.tterrag.registrate"
 base.archivesName = "Registrate-LT"
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 runs {
     configureEach {
@@ -59,8 +59,12 @@ dependencies {
     testRuntimeOnly    "org.junit.jupiter:junit-jupiter-engine:5.7.2"
 }
 
+test {
+    failOnNoDiscoveredTests = false
+}
+
 lombok {
-    version = "1.18.36"
+    version = "1.18.44"
 }
 
 delombok {
